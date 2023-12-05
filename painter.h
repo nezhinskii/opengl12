@@ -37,10 +37,10 @@ class Painter {
 
 
 	// ID ��������� ���������
-	GLuint Programs[3];
+	GLuint Programs[4];
 
 	// ID ��������
-	GLint Attrib_vertex[3];
+	GLint Attrib_vertex[4];
 
 	GLuint cubeCtVAO;
 
