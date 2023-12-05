@@ -45,6 +45,8 @@ class Painter {
 
 	GLuint tetrahedronVAO;
 
+	GLuint circleVAO;
+
 	const char* VertexShaderSource[4] = {
 		R"(
 		#version 330 core
@@ -103,8 +105,13 @@ class Painter {
 		R"(
 		#version 330 core
 		layout (location = 0) in vec3 coord;
+		layout (location = 1) in vec4 inColor;
+
+		out vec4 color;
+
 		void main() {
 			gl_Position = vec4(coord, 1.0);
+			color = inColor;
 		}
 		)"
 	};
@@ -152,8 +159,10 @@ class Painter {
 		R"(
 		#version 330 core
 		out vec4 fragColor;
+
+		in vec4 color;
 		void main() {
-			fragColor = vec4(1, 0, 0, 1);
+			fragColor = color;
 		}
 		)"
 	};
@@ -178,6 +187,7 @@ class Painter {
 		srand(time(0));
 		InitCube();
 		InitTetrahedron();
+		InitCircle();
 	}
 
 	void InitCube() {
@@ -242,6 +252,69 @@ class Painter {
 
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(2);
+	}
+
+	void HSVtoRGB(float h, float s, float v, float& r, float& g, float& b) {
+		int i = static_cast<int>(h * 6.0f);
+		float f = h * 6.0f - i;
+		float p = v * (1.0f - s);
+		float q = v * (1.0f - f * s);
+		float t = v * (1.0f - (1.0f - f) * s);
+
+		switch (i % 6) {
+			case 0: r = v, g = t, b = p; break;
+			case 1: r = q, g = v, b = p; break;
+			case 2: r = p, g = v, b = t; break;
+			case 3: r = p, g = q, b = v; break;
+			case 4: r = t, g = p, b = v; break;
+			case 5: r = v, g = p, b = q; break;
+		}
+	}
+
+	int circleSteps = 360;
+
+	void InitCircle() {
+		std::vector<MyVertex> circleVert;
+		std::vector<MyColor> circleColors;
+
+		float radius = 0.8f;
+		float angle = 3.1415f * 2.0f / circleSteps;
+		int vertCount = circleSteps * 3;
+
+		for (int i = 0; i < circleSteps; i++)
+		{
+			circleVert.push_back(MyVertex{ 0.0f, 0.0f, 0.0f });
+			circleVert.push_back(MyVertex{ radius * cos(angle * (i % vertCount)), radius * sin(angle * (i % vertCount)), 0.0f });
+			circleVert.push_back(MyVertex{ radius * cos(angle * ((i+1) % vertCount)), radius * sin(angle * ((i + 1) % vertCount)), 0.0f });
+
+			circleColors.push_back(MyColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
+			float r, g, b;
+
+			float hue = static_cast<float>(i) / static_cast<float>(circleSteps);
+			HSVtoRGB(hue, 1.0f, 1.0f, r, g, b);
+			circleColors.push_back(MyColor{ r, g, b, 1.0f });
+
+			hue = static_cast<float>((i + 1) % vertCount) / static_cast<float>(circleSteps);
+			HSVtoRGB(hue, 1.0f, 1.0f, r, g, b);
+			circleColors.push_back(MyColor{ r, g, b, 1.0f });
+		}
+
+		GLuint circleVBOs[2];
+		glGenBuffers(2, circleVBOs);
+
+		glGenVertexArrays(1, &circleVAO);
+		glBindVertexArray(circleVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, circleVBOs[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyVertex) * vertCount, circleVert.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, circleVBOs[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyColor) * vertCount, circleColors.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
 	}
 
 	void InitTetrahedron() {
@@ -315,7 +388,7 @@ class Painter {
 
 		GLuint vShaders[4];
 
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 4; i++) {
 			vShaders[i] = glCreateShader(GL_VERTEX_SHADER);
 			glShaderSource(vShaders[i], 1, &(VertexShaderSource[i]), NULL);
 
@@ -353,12 +426,12 @@ class Painter {
 				return;
 			}
 			// ���������� ID �������� �� ��������� ���������
-			const char* attr_name = "coord"; //��� � �������
-			Attrib_vertex[0] = glGetAttribLocation(Programs[i], attr_name);
-			if (Attrib_vertex[0] == -1) {
-				std::cout << "could not bind attrib " << attr_name << std::endl;
-				return;
-			}
+			//const char* attr_name = "coord"; //��� � �������
+			//Attrib_vertex[0] = glGetAttribLocation(Programs[i], attr_name);
+			//if (Attrib_vertex[0] == -1) {
+			//	std::cout << "could not bind attrib " << attr_name << std::endl;
+			//	return;
+			//}
 		}
 	}
 
@@ -388,7 +461,7 @@ class Painter {
 		// ��������� ����, �� ��������� ��������� ���������
 		glUseProgram(0);
 		// ������� ��������� ���������
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 4; i++) {
 			glDeleteProgram(Programs[i]);
 		}
 	}
@@ -434,6 +507,10 @@ public:
 		}	
 		case Figure::CubeTT: {
 			glBindVertexArray(cubeCtVAO);
+			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+			glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+			glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
+			angle += 0.01;
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -451,7 +528,7 @@ public:
 			glBindVertexArray(0);
 			break;
 		}
-		case Figure::Tetrahedron:
+		case Figure::Tetrahedron:{
 			glBindVertexArray(tetrahedronVAO);
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -459,16 +536,20 @@ public:
 			glDrawArrays(GL_TRIANGLES, 0, 12);
 			glBindVertexArray(0);
 			break;
-		case Figure::Circle:
-
+		}
+		case Figure::Circle: {
+			glBindVertexArray(circleVAO);
+			glDrawArrays(GL_TRIANGLES, 0, circleSteps * 3);
+			glBindVertexArray(0);
 			break;
+		}
 		default:
 			break;
 		}
-
+	
 		glUseProgram(0); // ��������� ��������� ���������
 	}
-
+	
 	void Init(TextureData texture1Data, TextureData texture2Data) {
 
 		glewInit();
