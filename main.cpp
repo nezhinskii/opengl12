@@ -19,32 +19,6 @@
 
 using namespace sf;
 
-void texturePickerWidget(std::string title, std::string* path, TextureData* texture, Painter* painter, int ind) {
-	if (ImGui::Button(title.c_str()))
-		ImGuiFileDialog::Instance()->OpenDialog(title.c_str(), "Choose Texture", ".png,.jpg,.jpeg", ".");
-	if ((*path).empty()) {
-		ImGui::Text("Empty");
-	}
-	else {
-		ImGui::Text((*path).c_str());
-	}
-
-	if (ImGuiFileDialog::Instance()->Display(title.c_str()))
-	{
-		if (ImGuiFileDialog::Instance()->IsOk())
-		{
-			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-			(*path) = filePathName;
-			(*texture).data = stbi_load(filePathName.c_str(), &(*texture).width, &(*texture).height, &(*texture).channels, 0);
-			(*painter).loadTexture(ind);
-		}
-		else {
-			(*path).clear();
-		}
-		ImGuiFileDialog::Instance()->Close();
-	}
-}
-
 int main() {
 	sf::RenderWindow window(sf::VideoMode(600, 600), "My OpenGL window", sf::Style::Default, sf::ContextSettings(24));
 	window.setFramerateLimit(60);
@@ -52,7 +26,12 @@ int main() {
 	window.setActive(true);
 
 	auto painter = Painter();
-	painter.Init();
+	TextureData texture1, texture2;
+	int channels;
+	texture1.data = stbi_load("text2.png", &texture1.width, &texture1.height, &channels, 0);
+	texture2.data = stbi_load("text2.png", &texture2.width, &texture2.height, &channels, 0);
+	painter.Init(texture1, texture2);
+
 	if (!ImGui::SFML::Init(window)) return -1;
 
 	sf::Clock deltaClock;		
@@ -83,14 +62,6 @@ int main() {
 		ImGui::RadioButton(label(Figure::CubeTT), &painter.state.figure, Figure::CubeTT);
 		ImGui::RadioButton(label(Figure::Tetrahedron), &painter.state.figure, Figure::Tetrahedron);
 		ImGui::RadioButton(label(Figure::Circle), &painter.state.figure, Figure::Circle);
-			
-		if (painter.state.figure == Figure::CubeCT) {
-			texturePickerWidget("Pick texture", &painter.state.texturePath, &painter.state.texture, &painter, 0);
-		}
-		if (painter.state.figure == Figure::CubeTT) {
-			texturePickerWidget("Pick texture 1", &painter.state.texture1Path, &painter.state.texture1, &painter, 1);
-			texturePickerWidget("Pick texture 2", &painter.state.texture2Path, &painter.state.texture2, &painter, 2);
-		}
 
 		window.clear();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

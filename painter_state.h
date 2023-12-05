@@ -20,13 +20,7 @@ const char* label(Figure figure);
 class PainterState {
 public:
 	int figure = Figure::CubeCT;
-	std::string texturePath;
-	TextureData texture;
-
-	std::string texture1Path;
-	std::string texture2Path;
-	TextureData texture1;
-	TextureData texture2;
+	double mixRatio = 1.0;
 
 	static const char* figureLabels[4];
 };
