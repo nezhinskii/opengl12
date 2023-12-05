@@ -1,0 +1,7 @@
+﻿  ImGuiFileDialog.cpp
+E:\mmcs\graphics\opengl12\lib\ImGuiFileDialog\ImGuiFileDialog.h(1271,10): fatal  error C1083: Не удается открыть файл включение: imgui.h: No such file or directory,
+  main.cpp
+E:\mmcs\graphics\opengl12\main.cpp(3,10): fatal  error C1083: Не удается открыть файл включение: GL/glew.h: No such file or directory,
+  painter_state.cpp
+E:\mmcs\graphics\opengl12\painter_state.cpp(2,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+E:\mmcs\graphics\opengl12\painter_state.h(2,10): fatal  error C1083: Не удается открыть файл включение: GL/glew.h: No such file or directory,

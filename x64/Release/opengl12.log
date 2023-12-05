@@ -1,0 +1,13 @@
+﻿  main.cpp
+E:\mmcs\graphics\opengl12\painter.h(205,13): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+E:\mmcs\graphics\opengl12\painter.h(431,9): warning C4101: currentAttrib: неиспользованная локальная переменная
+E:\mmcs\graphics\opengl12\main.cpp(16,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+E:\mmcs\graphics\opengl12\main.cpp(17,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+E:\mmcs\graphics\opengl12\main.cpp(18,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+     Создается библиотека E:\mmcs\graphics\opengl12\x64\Release\opengl12.lib и объект E:\mmcs\graphics\opengl12\x64\Release\opengl12.exp
+  Создание кода
+  2 of 2988 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    9 functions had inline decision re-evaluated but remain unchanged
+  Создание кода завершено
+  opengl12.vcxproj -> E:\mmcs\graphics\opengl12\x64\Release\opengl12.exe
