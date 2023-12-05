@@ -44,6 +44,8 @@ class Painter {
 
 	GLuint cubeCtVAO;
 
+	GLuint tetrahedronVAO;
+
 	const char* VertexShaderSource[4] = {
 		R"(
 		#version 330 core
@@ -76,8 +78,17 @@ class Painter {
 		R"(
 		#version 330 core
 		layout (location = 0) in vec3 coord;
+		layout (location = 1) in vec4 inColor;
+
+		out vec4 color;
+
+		uniform mat4 model;
+		uniform mat4 view; 
+		uniform mat4 projection;
+
 		void main() {
-			gl_Position = vec4(coord, 1.0);
+			gl_Position = projection * view * model * vec4(coord, 1.0);
+			color = inColor;
 		}
 		)",
 
@@ -120,8 +131,10 @@ class Painter {
 		R"(
 		#version 330 core
 		out vec4 fragColor;
+
+		in vec4 color;
 		void main() {
-			fragColor = vec4(1, 0, 0, 1);
+			fragColor = color;
 		}
 		)",
 
@@ -273,6 +286,65 @@ class Painter {
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(2);
 
+		InitTetrahedron();
+	}
+
+	void InitTetrahedron() {
+		std::vector<MyVertex> tetrRawVert{
+			MyVertex{ 0.5f, -0.5f, -0.5f },
+			MyVertex{ -0.5f, -0.5f, 0.5f },
+			MyVertex{ -0.5f, 0.5f, -0.5f },
+			MyVertex{ 0.5f, 0.5f, 0.5f },
+		};
+
+		std::vector<MyColor> tetrRawColors{
+			MyColor{ 1.0f, 0.0f, 0.0f, 1.0 },
+			MyColor{ 0.0f, 1.0f, 0.0f, 1.0 },
+			MyColor{ 0.0f, 0.0f, 1.0f, 1.0 },
+			MyColor{ 1.0f, 1.0f, 1.0f, 1.0 },
+		};
+
+		std::vector<MyVertex> tetrVert;
+		std::vector<MyColor> tetrColors;
+
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 2, 1);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 1, 2, 3);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 3, 2);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 1, 3);
+
+		GLuint tetrVBOs[2];
+		glGenBuffers(2, tetrVBOs);
+
+		glGenVertexArrays(1, &tetrahedronVAO);
+		glBindVertexArray(tetrahedronVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, tetrVBOs[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyVertex) * 12, tetrVert.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, tetrVBOs[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyColor) * 12, tetrColors.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
+	}
+
+	void addTriangle(
+		std::vector<MyVertex>& vertRaw,
+		std::vector<MyColor>& colorRaw,
+		std::vector<MyVertex>& vert,
+		std::vector<MyColor>& color,
+		int i1,
+		int i2,
+		int i3
+	) {
+		vert.push_back(vertRaw[i1]);
+		vert.push_back(vertRaw[i2]);
+		vert.push_back(vertRaw[i3]);
+
+		color.push_back(colorRaw[i1]);
+		color.push_back(colorRaw[i2]);
+		color.push_back(colorRaw[i3]);
 	}
 
 	void InitShader() {
@@ -423,7 +495,17 @@ public:
 
 			break;
 		case Figure::Tetrahedron:
-			
+			glBindVertexArray(tetrahedronVAO);
+			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+			glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+			glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
+			angle += 0.01;
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+			glDrawArrays(GL_TRIANGLES, 0, 12);
+			glBindVertexArray(0);
 			break;
 		case Figure::Circle:
 
