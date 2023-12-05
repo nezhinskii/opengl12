@@ -48,10 +48,10 @@ class Painter {
 		R"(
 		#version 330 core
 		layout (location = 0) in vec3 coord;
-		layout (location = 1) in vec3 inColor;
+		layout (location = 1) in vec4 inColor;
 		layout (location = 2) in vec2 inTextureCoord;
 
-		out vec3 color;
+		out vec4 color;
 		out vec2 textureCoord;
 
 		uniform mat4 model;
@@ -95,7 +95,7 @@ class Painter {
 		#version 330 core
 		out vec4 fragColor;
 
-		in vec3 color;
+		in vec4 color;
 		in vec2 textureCoord;
 
 		uniform bool useTexture;
@@ -104,7 +104,7 @@ class Painter {
 			if (useTexture) {
 				fragColor = texture(textureSampler, textureCoord);
 			} else {
-				fragColor = vec4(color, 1.0);
+				fragColor = color;
 			}
 		}
 		)",
@@ -203,7 +203,8 @@ class Painter {
 
 	void InitVBO() {
 		srand(time(0));
-		//glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+
 		// Common cube preparing
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -252,68 +253,26 @@ class Painter {
 		cubeRotationMatrix = glm::rotate(glm::mat4(1.0f), angleZ, glm::vec3(1.0f, 0.0f, 0.0f));
 		//cubeRotationMatrix = glm::rotate(cubeRotationMatrix, angleY, glm::vec3(0.0f, 1.0f, 0.0f));
 
-		float cube[] = {
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-
-			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f
-		};
-
 		// Cube Color-Texture
-		GLuint cubeCtVBO;
-		glGenBuffers(1, &cubeCtVBO);
-		glBindBuffer(GL_ARRAY_BUFFER, cubeCtVBO);
+		GLuint cubeCtVBOs[2];
+		glGenBuffers(2, cubeCtVBOs);
+
 		glGenVertexArrays(1, &cubeCtVAO);
 		glBindVertexArray(cubeCtVAO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+		glBindBuffer(GL_ARRAY_BUFFER, cubeCtVBOs[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyVertex) * 36, cubeVert.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3* sizeof(GLfloat)));
+		glBindBuffer(GL_ARRAY_BUFFER, cubeCtVBOs[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyColor) * 36, cubeColors.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(1);
 
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
 		glEnableVertexAttribArray(2);
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
 	void InitShader() {
@@ -428,6 +387,7 @@ public:
 	GLfloat angle = glm::radians(0.0f);
 
 	void Draw() {
+		glEnable(GL_DEPTH_TEST);
 		GLint currentAttrib;
 		glUseProgram(Programs[state.figure]);
 
@@ -437,8 +397,8 @@ public:
 			glBindVertexArray(cubeCtVAO);
 			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
 			glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
-			glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			//angle += 0.01;
+			glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
+			angle += 0.01;
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
