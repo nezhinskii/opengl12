@@ -109,8 +109,10 @@ class Painter {
 
 		out vec4 color;
 
+        uniform mat4 scale;
+
 		void main() {
-			gl_Position = vec4(coord, 1.0);
+			gl_Position = scale*vec4(coord, 1.0);
 			color = inColor;
 		}
 		)"
@@ -284,8 +286,8 @@ class Painter {
 		for (int i = 0; i < circleSteps; i++)
 		{
 			circleVert.push_back(MyVertex{ 0.0f, 0.0f, 0.0f });
-			circleVert.push_back(MyVertex{ radius * cos(angle * (i % vertCount)), radius * sin(angle * (i % vertCount)), 0.0f });
-			circleVert.push_back(MyVertex{ radius * cos(angle * ((i+1) % vertCount)), radius * sin(angle * ((i + 1) % vertCount)), 0.0f });
+			circleVert.push_back(MyVertex{ radius * cos(angle * (i % vertCount)), radius * sin(angle * (i % vertCount)), 0.0f});
+			circleVert.push_back(MyVertex{ radius * cos(angle * ((i + 1) % vertCount)), radius * sin(angle * ((i + 1) % vertCount)), 0.0f});
 
 			circleColors.push_back(MyColor{ 1.0f, 1.0f, 1.0f, 1.0f });
 
@@ -318,6 +320,7 @@ class Painter {
 	}
 
 	void InitTetrahedron() {
+
 		std::vector<MyVertex> tetrRawVert{
 			MyVertex{ 0.5f, -0.5f, -0.5f },
 			MyVertex{ -0.5f, -0.5f, 0.5f },
@@ -529,8 +532,10 @@ public:
 			break;
 		}
 		case Figure::Tetrahedron:{
+			glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(state.tetrahedronOffset[0], state.tetrahedronOffset[1], state.tetrahedronOffset[2]));
+			glm::mat4 model = translationMatrix*rotationMatrix;
 			glBindVertexArray(tetrahedronVAO);
-			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 			glDrawArrays(GL_TRIANGLES, 0, 12);
@@ -538,7 +543,10 @@ public:
 			break;
 		}
 		case Figure::Circle: {
+			glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(state.circleCoef[0], state.circleCoef[1], 0.0f));
 			glBindVertexArray(circleVAO);
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "scale"), 1, GL_FALSE, glm::value_ptr(scaleMatrix));
+
 			glDrawArrays(GL_TRIANGLES, 0, circleSteps * 3);
 			glBindVertexArray(0);
 			break;

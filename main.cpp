@@ -61,12 +61,24 @@ int main() {
 							painter.state.mixRatio -= 0.02;
 						}
 					}
+					else if (painter.state.figure == Figure::Circle) {
+						painter.state.circleCoef[painter.state.circleAxis] -= 0.1;
+					}
+					else if (painter.state.figure == Figure::Tetrahedron) {
+						painter.state.tetrahedronOffset[painter.state.tetrahedronAxis] -= 0.1;
+					}
 					break;
 				case sf::Keyboard::Up:
 					if (painter.state.figure == Figure::CubeCT || painter.state.figure == Figure::CubeTT) {
 						if (painter.state.mixRatio < 1) {
 							painter.state.mixRatio += 0.02;
 						}
+					}
+					else if (painter.state.figure == Figure::Circle) {
+						painter.state.circleCoef[painter.state.circleAxis] += 0.1;
+					}
+					else if (painter.state.figure == Figure::Tetrahedron) {
+						painter.state.tetrahedronOffset[painter.state.tetrahedronAxis] += 0.1;
 					}
 					break;
 				default:
@@ -83,6 +95,20 @@ int main() {
 		ImGui::RadioButton(label(Figure::CubeTT), &painter.state.figure, Figure::CubeTT);
 		ImGui::RadioButton(label(Figure::Tetrahedron), &painter.state.figure, Figure::Tetrahedron);
 		ImGui::RadioButton(label(Figure::Circle), &painter.state.figure, Figure::Circle);
+
+		switch (painter.state.figure) {
+		case Figure::Circle:
+			ImGui::Text("Axis:");
+			ImGui::RadioButton("X", &painter.state.circleAxis, Axis2D::X2);
+			ImGui::RadioButton("Y", &painter.state.circleAxis, Axis2D::Y2);
+			break;
+		case Figure::Tetrahedron:
+			ImGui::Text("Axis:");
+			ImGui::RadioButton("X", &painter.state.tetrahedronAxis, Axis3D::X3);
+			ImGui::RadioButton("Y", &painter.state.tetrahedronAxis, Axis3D::Y3);
+			ImGui::RadioButton("Z", &painter.state.tetrahedronAxis, Axis3D::Z3);
+			break;
+		}
 
 		window.clear();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

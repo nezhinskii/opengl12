@@ -1,0 +1,18 @@
+﻿  ImGuiFileDialog.cpp
+  main.cpp
+C:\Users\mmkar\source\repos\opengl12\painter.h(187,13): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+C:\Users\mmkar\source\repos\opengl12\painter.h(488,1): warning C4305: +=: усечение из "double" в "GLfloat"
+C:\Users\mmkar\source\repos\opengl12\painter.h(498,79): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
+C:\Users\mmkar\source\repos\opengl12\painter.h(513,1): warning C4305: +=: усечение из "double" в "GLfloat"
+C:\Users\mmkar\source\repos\opengl12\painter.h(518,79): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
+C:\Users\mmkar\source\repos\opengl12\painter.h(486,9): warning C4101: currentAttrib: неиспользованная локальная переменная
+C:\Users\mmkar\source\repos\opengl12\main.cpp(16,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+C:\Users\mmkar\source\repos\opengl12\main.cpp(17,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+C:\Users\mmkar\source\repos\opengl12\main.cpp(18,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+  painter_state.cpp
+C:\Users\mmkar\source\repos\opengl12\painter_state.cpp(2,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
+  Создание кода...
+     Создается библиотека C:\Users\mmkar\source\repos\opengl12\x64\Debug\opengl12.lib и объект C:\Users\mmkar\source\repos\opengl12\x64\Debug\opengl12.exp
+  opengl12.vcxproj -> C:\Users\mmkar\source\repos\opengl12\x64\Debug\opengl12.exe
+  "pwsh.exe" не является внутренней или внешней
+  командой, исполняемой программой или пакетным файлом.
