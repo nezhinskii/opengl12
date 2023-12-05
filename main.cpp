@@ -28,8 +28,8 @@ int main() {
 	auto painter = Painter();
 	TextureData texture1, texture2;
 	int channels;
-	texture1.data = stbi_load("text2.png", &texture1.width, &texture1.height, &channels, 0);
-	texture2.data = stbi_load("text2.png", &texture2.width, &texture2.height, &channels, 0);
+	texture1.data = stbi_load("texture1.jpg", &texture1.width, &texture1.height, &channels, 0);
+	texture2.data = stbi_load("texture2.jpg", &texture2.width, &texture2.height, &channels, 0);
 	painter.Init(texture1, texture2);
 
 	if (!ImGui::SFML::Init(window)) return -1;
@@ -51,6 +51,27 @@ int main() {
 					600,
 					600
 				);
+			}
+			else if (event.type == sf::Event::KeyPressed) {
+				switch (event.key.code)
+				{
+				case sf::Keyboard::Down:
+					if (painter.state.figure == Figure::CubeCT || painter.state.figure == Figure::CubeTT) {
+						if (painter.state.mixRatio > 0) {
+							painter.state.mixRatio -= 0.02;
+						}
+					}
+					break;
+				case sf::Keyboard::Up:
+					if (painter.state.figure == Figure::CubeCT || painter.state.figure == Figure::CubeTT) {
+						if (painter.state.mixRatio < 1) {
+							painter.state.mixRatio += 0.02;
+						}
+					}
+					break;
+				default:
+					break;
+				}
 			}
 		}
 

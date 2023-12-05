@@ -43,6 +43,8 @@ class Painter {
 
 	GLuint cubeCtVAO;
 
+	GLuint tetrahedronVAO;
+
 	const char* VertexShaderSource[4] = {
 		R"(
 		#version 330 core
@@ -67,16 +69,34 @@ class Painter {
 		R"(
 		#version 330 core
 		layout (location = 0) in vec3 coord;
+		layout (location = 1) in vec3 inColor;
+		layout (location = 2) in vec2 inTextureCoord;
+		out vec2 textureCoord;
+
+		uniform mat4 model;
+		uniform mat4 view; 
+		uniform mat4 projection;
+
 		void main() {
-			gl_Position = vec4(coord, 1.0);
+			gl_Position = projection * view * model * vec4(coord, 1.0);
+			textureCoord = inTextureCoord;
 		}
 		)",
 
 		R"(
 		#version 330 core
 		layout (location = 0) in vec3 coord;
+		layout (location = 1) in vec4 inColor;
+
+		out vec4 color;
+
+		uniform mat4 model;
+		uniform mat4 view; 
+		uniform mat4 projection;
+
 		void main() {
-			gl_Position = vec4(coord, 1.0);
+			gl_Position = projection * view * model * vec4(coord, 1.0);
+			color = inColor;
 		}
 		)",
 
@@ -97,26 +117,35 @@ class Painter {
 		in vec4 color;
 		in vec2 textureCoord;
 
-		uniform bool useTexture;
+		uniform float mixRatio;
 		uniform sampler2D textureSampler;
 		void main() {
-			fragColor = texture(textureSampler, textureCoord);
+			fragColor = mix(texture(textureSampler, textureCoord), color, mixRatio);
 		}
 		)",
 
 		R"(
 		#version 330 core
 		out vec4 fragColor;
+
+		in vec4 color;
+		in vec2 textureCoord;
+
+		uniform float mixRatio;
+		uniform sampler2D texture1Sampler;
+		uniform sampler2D texture2Sampler;
 		void main() {
-			fragColor = vec4(1, 0, 0, 1);
+			fragColor = mix(texture(texture1Sampler, textureCoord), texture(texture2Sampler, textureCoord), mixRatio);
 		}
 		)",
 
 		R"(
 		#version 330 core
 		out vec4 fragColor;
+
+		in vec4 color;
 		void main() {
-			fragColor = vec4(1, 0, 0, 1);
+			fragColor = color;
 		}
 		)",
 
@@ -143,114 +172,56 @@ class Painter {
 		}
 	}
 
-	float randF(float start, float end) {
-		return (float)((rand() % (int)((end - start) * 10)) / 10.0 + start);
-	}
-
 	GLuint texture1, texture2;
-	glm::mat4 cubeRotationMatrix;
-	std::vector<MyColor> cubePointColors{
-		MyColor{ 1.0f, 0.0f, 0.0f, 1.0 },
-		MyColor{ 0.0f, 1.0f, 0.0f, 1.0 },
-		MyColor{ 0.0f, 0.0f, 1.0f, 1.0 },
-		MyColor{ 1.0f, 1.0f, 1.0f, 1.0 },
-
-		MyColor{ 1.0f, 1.0f, 0.0f, 1.0 },
-		MyColor{ 0.0f, 1.0f, 1.0f, 1.0 },
-		MyColor{ 1.0f, 0.0f, 1.0f, 1.0 },
-		MyColor{ 0.0f, 0.0f, 0.0f, 1.0 },
-	};
-	std::vector<MyVertex> cubePoints{
-		MyVertex{ 0.5f, -0.5f, -0.5f },
-		MyVertex{ 0.5f, 0.5f, -0.5f },
-		MyVertex{ -0.5f, 0.5f, -0.5f },
-		MyVertex{ -0.5f, -0.5f, -0.5f },
-
-		MyVertex{ -0.5f, -0.5f, 0.5f },
-		MyVertex{ -0.5f, 0.5f, 0.5f },
-		MyVertex{ 0.5f, 0.5f, 0.5f },
-		MyVertex{ 0.5f, -0.5f, 0.5f },
-	};
-
-	void addCubeTriangle(
-		std::vector<MyVertex>& vert,
-		std::vector<MyColor>& color,
-		std::vector<MyTexCoord>& texture,
-		int i1,
-		int i2,
-		int i3,
-		int i4
-	) {
-		vert.push_back(cubePoints[i1]);
-		vert.push_back(cubePoints[i4]);
-		vert.push_back(cubePoints[i3]);
-		vert.push_back(cubePoints[i3]);
-		vert.push_back(cubePoints[i2]);
-		vert.push_back(cubePoints[i1]);
-
-		color.push_back(cubePointColors[i1]);
-		color.push_back(cubePointColors[i4]);
-		color.push_back(cubePointColors[i3]);
-		color.push_back(cubePointColors[i3]);
-		color.push_back(cubePointColors[i2]);
-		color.push_back(cubePointColors[i1]);
-
-		texture.push_back(MyTexCoord{ 0.0f, 0.0f });
-		texture.push_back(MyTexCoord{ 1.0f, 0.0f });
-		texture.push_back(MyTexCoord{ 1.0f, 1.0f });
-		texture.push_back(MyTexCoord{ 1.0f, 1.0f });
-		texture.push_back(MyTexCoord{ 0.0f, 1.0f });
-		texture.push_back(MyTexCoord{ 0.0f, 0.0f });
-	}
 
 	void InitVBO() {
 		srand(time(0));
-		
 		InitCube();
+		InitTetrahedron();
 	}
 
 	void InitCube() {
 		GLfloat cube[] = {
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
 			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
 
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
 
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
 			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
 
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
 
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			 0.5f, -0.5f,  0.5f,   1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-			-0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-			-0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
 
 			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f
 		};
 
@@ -271,6 +242,64 @@ class Painter {
 
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(2);
+	}
+
+	void InitTetrahedron() {
+		std::vector<MyVertex> tetrRawVert{
+			MyVertex{ 0.5f, -0.5f, -0.5f },
+			MyVertex{ -0.5f, -0.5f, 0.5f },
+			MyVertex{ -0.5f, 0.5f, -0.5f },
+			MyVertex{ 0.5f, 0.5f, 0.5f },
+		};
+
+		std::vector<MyColor> tetrRawColors{
+			MyColor{ 1.0f, 0.0f, 0.0f, 1.0 },
+			MyColor{ 0.0f, 1.0f, 0.0f, 1.0 },
+			MyColor{ 0.0f, 0.0f, 1.0f, 1.0 },
+			MyColor{ 1.0f, 1.0f, 1.0f, 1.0 },
+		};
+
+		std::vector<MyVertex> tetrVert;
+		std::vector<MyColor> tetrColors;
+
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 2, 1);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 1, 2, 3);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 3, 2);
+		addTriangle(tetrRawVert, tetrRawColors, tetrVert, tetrColors, 0, 1, 3);
+
+		GLuint tetrVBOs[2];
+		glGenBuffers(2, tetrVBOs);
+
+		glGenVertexArrays(1, &tetrahedronVAO);
+		glBindVertexArray(tetrahedronVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, tetrVBOs[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyVertex) * 12, tetrVert.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, tetrVBOs[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(MyColor) * 12, tetrColors.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
+	}
+
+	void addTriangle(
+		std::vector<MyVertex>& vertRaw,
+		std::vector<MyColor>& colorRaw,
+		std::vector<MyVertex>& vert,
+		std::vector<MyColor>& color,
+		int i1,
+		int i2,
+		int i3
+	) {
+		vert.push_back(vertRaw[i1]);
+		vert.push_back(vertRaw[i2]);
+		vert.push_back(vertRaw[i3]);
+
+		color.push_back(colorRaw[i1]);
+		color.push_back(colorRaw[i2]);
+		color.push_back(colorRaw[i3]);
 	}
 
 	void InitShader() {
@@ -334,10 +363,6 @@ class Painter {
 	}
 
 	void InitTextures(TextureData texture1Data, TextureData texture2Data) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		glGenTextures(1, &texture1);
 		glBindTexture(GL_TEXTURE_2D, texture1);
@@ -354,7 +379,7 @@ class Painter {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture1Data.width, texture2Data.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture2Data.data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture2Data.width, texture2Data.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture2Data.data);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
@@ -374,46 +399,65 @@ class Painter {
 	//	glDeleteBuffers(1, &quadVBO);
 	//	glDeleteBuffers(1, &fanVBO);
 	//}
+	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+	glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
 
 public:
 	PainterState state;
 
-	GLfloat angle = glm::radians(0.0f);
+	GLfloat angle = 0.0f;
 
 	void Draw() {
 		glEnable(GL_DEPTH_TEST);
 		GLint currentAttrib;
 		glUseProgram(Programs[state.figure]);
-
+		angle += 0.005;
+		rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
 		switch (state.figure)
 		{
 		case Figure::CubeCT: {
 			glBindVertexArray(cubeCtVAO);
-			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-			glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
-			glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 0.5f, 0.0f));
-			angle += 0.005;
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-			GLint useTextureLoc = glGetUniformLocation(Programs[state.figure], "useTexture");
-			glUniform1i(useTextureLoc, GL_TRUE);
+			glUniform1f(glGetUniformLocation(Programs[state.figure], "mixRatio"), state.mixRatio);
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, texture1);
-			GLint textureLoc = glGetUniformLocation(Programs[state.figure], "textureSampler");
-			glUniform1i(textureLoc, 0);
+			glUniform1i(glGetUniformLocation(Programs[state.figure], "textureSampler"), 0);
+
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindVertexArray(0);
 			break;
 		}	
-		case Figure::CubeTT:
-			
+		case Figure::CubeTT: {
+			glBindVertexArray(cubeCtVAO);
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
+			glUniform1f(glGetUniformLocation(Programs[state.figure], "mixRatio"), state.mixRatio);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture1);
+			glUniform1i(glGetUniformLocation(Programs[state.figure], "texture1Sampler"), 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, texture2);
+			glUniform1i(glGetUniformLocation(Programs[state.figure], "texture2Sampler"), 1);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
 			break;
+		}
 		case Figure::Tetrahedron:
-			
+			glBindVertexArray(tetrahedronVAO);
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "model"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(Programs[state.figure], "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+			glDrawArrays(GL_TRIANGLES, 0, 12);
+			glBindVertexArray(0);
 			break;
 		case Figure::Circle:
 
